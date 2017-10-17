@@ -38,7 +38,7 @@ namespace SampleQueries
 
         [Category("Where")]
         [Title("LINQ-003")]
-        [Description("Клиенты, у которых заказы превосходят по сумме величину X.")]
+        [Description("Клиенты, у которых заказы превосходят по сумме величину X. И сумма всех заказов")]
         public void Linq003()
         {
             var amount = 1000;
@@ -51,6 +51,20 @@ namespace SampleQueries
                 var order = customer.Orders.First(o => o.Total > amount);
                 Console.WriteLine($"{customer.CustomerID}: Id Заказа: {order.OrderID} - Сумма заказа: {order.Total}");
             }
+
+            Console.WriteLine();
+
+            decimal totalAmount = 0;
+
+            foreach (var customer in customers)
+            {
+                foreach (var order in customer.Orders)
+                {
+                    totalAmount += order.Total;
+                }
+            }
+
+            Console.WriteLine($"Сумма всех заказов:{totalAmount}");
         }
 
         [Category("Where")]
@@ -58,32 +72,16 @@ namespace SampleQueries
         [Description("Показать клиентов с нецифровым кодом или без региона или в телефоне не указан код оператора (для простоты считаем, что это равнозначно «нет круглых скобочек в начале»).")]
         public void Linq006()
         {
-            var customers = dataSource.Customers.Where(c =>
-            {
-                if (!string.IsNullOrEmpty(c.PostalCode) && Regex.IsMatch(c.PostalCode, @"\D"))
-                {
-                    return true;
-                }
-
-                if (string.IsNullOrEmpty(c.Region))
-                {
-                    return true;
-                }
-
-                if (!string.IsNullOrEmpty(c.Phone) && !c.Phone.StartsWith("("))
-                {
-                    return true;
-                }
-
-                return false;
-            });
+            var customers = dataSource.Customers.Where(c => (!string.IsNullOrEmpty(c.Phone) && !c.Phone.StartsWith("(")));
 
             foreach (var customer in customers)
             {
-                Console.WriteLine($"{customer.CustomerID} - {customer.PostalCode} - {customer.Region} - {customer.Phone}");
+                if (string.IsNullOrEmpty(customer.Region) || !string.IsNullOrEmpty(customer.PostalCode) && !customer.PostalCode.Contains(string.Format(@"\d")))
+                {
+                    Console.WriteLine($"{customer.CustomerID} - {customer.PostalCode} - {customer.Region} - {customer.Phone}");
+                }
             }
         }
-
 
         [Category("Join")]
         [Title("LINQ-002")]
@@ -122,8 +120,12 @@ namespace SampleQueries
         {
             foreach (var customer in dataSource.Customers)
             {
-                Console.WriteLine(
-                    $"{customer.CustomerID} - {customer.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate}");
+                var date = customer.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate;
+
+                if (date != null)
+                {
+                    Console.WriteLine($"CustomerID: {customer.CustomerID} - Start date: {date}");
+                }
             }
         }
 
@@ -146,7 +148,10 @@ namespace SampleQueries
                 var total = customer.Orders.Sum(o => o.Total);
                 var customerId = customer.CustomerID;
 
-                Console.WriteLine($"{year} - {month} - {total} - {customerId}");
+                if (year != null && month != null)
+                {
+                    Console.WriteLine($"{year} - {month} - {total} - {customerId}");
+                }
             }
         }
 
